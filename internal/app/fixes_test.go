@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -196,5 +197,31 @@ func TestDoctorReportsQuarantinedState(t *testing.T) {
 	}
 	if recovered == nil || recovered.Status != CheckWarning || !strings.Contains(recovered.Detail, "memory.toml.corrupt-") {
 		t.Errorf("recovered check = %+v", recovered)
+	}
+}
+
+// Ordinary variables whose names happen to match a history pattern when joined
+// with their value (aws_account=… vs `AWS_*=`) must still be remembered and
+// recorded as fills.
+func TestRememberKeepsAwsNamedVariables(t *testing.T) {
+	st, err := state.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := &fileBackend{state: st, redact: redactor()}
+	e := entry.Entry{
+		Template: "aws sso login --account <aws_account> --region <region>",
+		Source:   entry.SourceCheat,
+		Vars:     []entry.VarSpec{{Name: "aws_account"}, {Name: "region"}},
+	}
+	b.Remember(e, resolve.Field{Name: "aws_account"}, "billing-prod")
+	if got := st.Recall(e.ID(), "aws_account", "global"); len(got) != 1 {
+		t.Fatalf("aws_account not remembered: %v", got)
+	}
+	vals := map[string]string{"aws_account": "billing-prod", "region": "us-east-1"}
+	b.RememberFill(e, vals)
+	fills := b.RecentFills(context.Background(), e, nil)
+	if len(fills) != 1 || fills[0].Values["aws_account"] != "billing-prod" {
+		t.Fatalf("fill not recorded: %+v", fills)
 	}
 }

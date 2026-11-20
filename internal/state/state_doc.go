@@ -3,6 +3,7 @@
 // can inspect and edit:
 //
 //   - memory.toml — remembered variable values (for argument memory)
+//   - fills.toml  — remembered completed forms (for recent fills)
 //   - usage.toml  — per-entry launch counts and last-used times (for ranking)
 //
 // Shell command history is NOT stored here; it is read live from the shell's

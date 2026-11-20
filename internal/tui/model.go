@@ -81,6 +81,16 @@ type Model struct {
 
 	fieldCancel   context.CancelFunc
 	previewCancel context.CancelFunc
+	recentCancel  context.CancelFunc
+
+	// history holds the shell-history entries (newest first, capped) that
+	// recent fills are matched against.
+	history []entry.Entry
+	// now is the clock for "2h ago" labels; nil means time.Now.
+	now func() time.Time
+	// dimCandidates suppresses the candidate highlight while rendering a
+	// form whose Recent block owns the arrow keys.
+	dimCandidates bool
 
 	// terminal size
 	width  int
@@ -124,6 +134,7 @@ func NewWithOptions(entries []entry.Entry, backend Backend, opts Options) *Model
 		allEntries: entries,
 		queryInput: newTextInput(""),
 		status:     opts.Status,
+		history:    historyForFills(entries),
 		Aborted:    true, // until a command is produced
 	}
 	m.refilter()
@@ -143,6 +154,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.applyFieldData(msg)
 	case previewDataMsg:
 		return m.applyPreviewData(msg)
+	case recentFillsMsg:
+		return m.applyRecentFills(msg)
 	case tea.KeyMsg:
 		if m.stage == stageList {
 			return m.updateList(msg)
@@ -306,6 +319,9 @@ func (m *Model) bookmarkCurrent() (tea.Model, tea.Cmd) {
 	m.stage = stageForm
 	m.clearBeforeRender = true
 	cmd := m.loadCurrentField(false)
+	if recent := m.loadRecentFills(); recent != nil {
+		cmd = tea.Batch(cmd, recent)
+	}
 	return m, cmd
 }
 
@@ -372,12 +388,20 @@ func (m *Model) selectEntry() (tea.Model, tea.Cmd) {
 	m.stage = stageForm
 	m.clearBeforeRender = true
 	cmd := m.loadCurrentField(false)
+	if recent := m.loadRecentFills(); recent != nil {
+		cmd = tea.Batch(cmd, recent)
+	}
 	return m, cmd
 }
 
 // --- form stage ---
 
 func (m *Model) updateForm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	if m.recentShown() {
+		if handled, next, cmd := m.updateRecent(msg); handled {
+			return next, cmd
+		}
+	}
 	fs := m.form.cur()
 	switch msg.Type {
 	case tea.KeyCtrlC:
@@ -636,6 +660,10 @@ func (m *Model) cancelFormWork() {
 		m.previewCancel()
 		m.previewCancel = nil
 	}
+	if m.recentCancel != nil {
+		m.recentCancel()
+		m.recentCancel = nil
+	}
 }
 
 func cloneStrings(src map[string]string) map[string]string {
@@ -737,6 +765,12 @@ func (m *Model) persist() {
 		}
 		if fs.input != "" {
 			m.backend.Remember(m.form.entry, fs.field, fs.input)
+		}
+	}
+	// The whole form is also recorded as one recent fill.
+	if fb, ok := m.backend.(FillsBackend); ok {
+		if vals := m.form.fillValues(); len(vals) > 0 {
+			fb.RememberFill(m.form.entry, vals)
 		}
 	}
 }

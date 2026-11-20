@@ -126,6 +126,33 @@ learns your habits. Commando is the one resolution engine behind all of it.
 
     [:octicons-arrow-right-24: Files & storage](reference/files.md)
 
+-   <span class="feature-card__index">07</span> :material-source-repository: __Cheat packs & repos__
+
+    ---
+
+    Share cheats as a git repo. `commando cheats add <git-url> [file]` pulls in
+    a whole repo or one file, after showing you every shell command it runs.
+
+    [:octicons-arrow-right-24: Cheat packs & repos](guide/cheat-packs.md)
+
+-   <span class="feature-card__index">08</span> :material-form-select: __Recent fills__
+
+    ---
+
+    Every finished form is remembered as a set. Pick a recent one to refill all
+    fields at once, including matches found in your shell history.
+
+    [:octicons-arrow-right-24: Recent fills](guide/argument-memory.md#recent-fills)
+
+-   <span class="feature-card__index">09</span> :material-bookmark-multiple: __Bookmarks__
+
+    ---
+
+    Save any command with tags and a note, then find it again by describing
+    it. Bookmarks sort to the top of the list.
+
+    [:octicons-arrow-right-24: Bookmarks](guide/bookmarks.md)
+
 </div>
 
 ## From prompt to command in seconds

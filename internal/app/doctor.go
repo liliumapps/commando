@@ -11,6 +11,7 @@ import (
 	"github.com/liliumapps/commando/internal/persist"
 	"github.com/liliumapps/commando/internal/provider/history"
 	"github.com/liliumapps/commando/internal/provider/project"
+	"github.com/liliumapps/commando/internal/sources"
 	"github.com/liliumapps/commando/internal/state"
 )
 
@@ -67,6 +68,7 @@ func Doctor() []Check {
 	} else {
 		add("cheats", CheckOK, fmt.Sprintf("%d command(s) loaded", len(cheats)))
 	}
+	add(sourcesCheck(paths))
 
 	// Opening state also moves a corrupt memory/usage file aside; the
 	// "recovered" check below then lists it.
@@ -122,6 +124,24 @@ func Doctor() []Check {
 		add("binary", CheckOK, path)
 	}
 	return checks
+}
+
+// sourcesCheck reports the cheat sources: how many, how many commands they
+// load, and any missing clone, unreviewed commit, or load error.
+func sourcesCheck(paths config.Paths) (name string, status CheckStatus, detail string) {
+	count, commands, problems := sources.Status(paths)
+	switch {
+	case len(problems) > 0:
+		msgs := make([]string, len(problems))
+		for i, p := range problems {
+			msgs[i] = strings.ReplaceAll(p.Error(), "\n", "; ")
+		}
+		return "sources", CheckWarning, fmt.Sprintf("%d source(s), %d command(s) loaded; %s", count, commands, strings.Join(msgs, "; "))
+	case count == 0:
+		return "sources", CheckOK, "none; add one with `commando cheats add <git-url> [file]`"
+	default:
+		return "sources", CheckOK, fmt.Sprintf("%d source(s), %d command(s) loaded", count, commands)
+	}
 }
 
 func fallback(value, defaultValue string) string {

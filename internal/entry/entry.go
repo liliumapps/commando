@@ -235,6 +235,10 @@ type Entry struct {
 	// can be retitled or its template edited without orphaning its remembered
 	// values and usage.
 	StableID string
+	// Origin labels the cheat source an entry was loaded from (e.g.
+	// "team-cheats" or "commando/docker.toml"). It is empty for the user's own
+	// cheats and for every non-cheat entry.
+	Origin string
 
 	// search caches the lowercased searchable fields; see PrepareSearch.
 	search *SearchFields

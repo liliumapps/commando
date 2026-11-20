@@ -21,6 +21,7 @@ Commands:
   state clear ...    Clear remembered arguments or usage ranking
   promote [flags]    Promote a command or history entry into a managed cheat
   bookmark ...       Manage bookmarks: add/list/remove (also: bm)
+  cheats ...         Manage cheat sources (git repos): add/list/update/remove
   version            Print the version
   help               Show this help
 ```
@@ -154,8 +155,10 @@ See [Shell history](../guide/shell-history.md).
 
 ## `commando doctor`
 
-Inspect the active paths, config and cheat files, state store, shell history,
-project providers, shell support, and binary discovery.
+Inspect the active paths, config and cheat files, cheat sources, state store,
+shell history, project providers, shell support, and binary discovery. The
+`sources` line warns about a missing clone, a clone at a commit other than the
+reviewed one, and files that fail to load.
 
 ```sh
 commando doctor
@@ -177,8 +180,8 @@ commando state clear usage
 commando state clear all
 ```
 
-`memory` forgets parameter values, `usage` resets command and candidate
-frecency, and `all` clears both.
+`memory` forgets parameter values and recent form fills (`fills.toml`),
+`usage` resets command and candidate frecency, and `all` clears both.
 
 ---
 
@@ -240,6 +243,55 @@ In the TUI, highlight a bookmark and press ++ctrl+d++ twice (the first press
 asks for confirmation) for the same operation.
 
 See [Bookmarks](../guide/bookmarks.md).
+
+---
+
+## `commando cheats`
+
+Manage cheat sources: git repositories, or single files in them, whose cheats
+load next to your own. See [Cheat packs & repos](../guide/cheat-packs.md).
+
+```sh
+commando cheats add [--yes] <git-url> [file]
+commando cheats list                       # alias: ls
+commando cheats update [--yes]
+commando cheats remove <git-url> [file]    # alias: rm
+```
+
+`<git-url>` is `https://...`, `ssh://...`, or `git@host:path`; local paths,
+`file://`, `http://`, and transport helpers such as `ext::` are refused.
+`[file]` is a path from the repository root ending in `.toml`.
+
+| Flag | Effect |
+|---|---|
+| `--yes` | Trust the reviewed `src` and `preview` commands without asking. They are still printed. |
+
+### `cheats add`
+
+Without `file`, adds the whole repository (every `*.toml`, skipping folders
+that start with `.`); with `file`, adds just that file. The repository is
+shallow-cloned, every distinct `src` and `preview` command is printed under
+its cheat's title, and commando asks `Trust these commands? [y/N]`. Declining
+(or running without a terminal and without `--yes`) exits `1` and changes
+nothing. Adding the same URL and file twice is an error.
+
+### `cheats list` / `ls`
+
+Prints one row per source: URL, file (or `all`), reviewed commit, number of
+commands loaded, and when it was last added or updated. A count marked `!`
+has a problem, described below the table.
+
+### `cheats update`
+
+Fetches the newest commit of each repository's default branch. When a `src`
+or `preview` command is new or changed (marked `*`), the commands are reviewed
+again; declining keeps the previous commit and exits `1`. Sources added to
+`sources.toml` by hand are cloned and reviewed in full.
+
+### `cheats remove` / `rm`
+
+Removes the source with exactly this URL and file (omit `file` for a
+whole-repository source). The clone is deleted when no other source uses it.
 
 ---
 

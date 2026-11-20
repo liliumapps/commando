@@ -1,0 +1,79 @@
+# npm cheat sheet for commando.
+#
+# The project provider already lists package.json scripts; these cover the
+# package-management commands around them.
+
+[[cmd]]
+title = "Install npm packages"
+desc = "Add packages to dependencies."
+tmpl = "npm install <packages>"
+tags = ["npm", "install", "add", "node"]
+
+  [[cmd.var]]
+  name     = "packages"
+  multi    = true
+  remember = "none"
+
+[[cmd]]
+title = "Install npm dev packages"
+desc = "Add packages to devDependencies."
+tmpl = "npm install --save-dev <packages>"
+tags = ["npm", "install", "dev", "node"]
+
+  [[cmd.var]]
+  name     = "packages"
+  multi    = true
+  remember = "none"
+
+[[cmd]]
+title = "Uninstall npm package"
+desc = "Remove a direct dependency."
+tmpl = "npm uninstall <package>"
+tags = ["npm", "uninstall", "remove", "node"]
+
+  [[cmd.var]]
+  name     = "package"
+  src      = "node -e \"const p = require('./package.json'); for (const k of Object.keys({ ...p.dependencies, ...p.devDependencies })) console.log(k)\""
+  remember = "none"
+
+[[cmd]]
+title = "Show npm package info"
+desc = "Show registry metadata for a package, optionally one field."
+tmpl = "npm view <package> [<field>]"
+tags = ["npm", "view", "info", "version"]
+
+  [[cmd.var]]
+  name = "package"
+
+  [[cmd.var]]
+  name   = "field"
+  values = ["version", "versions", "dependencies", "repository.url", "dist-tags"]
+
+[[cmd]]
+title = "Explain npm dependency"
+desc = "Show why a package is installed."
+tmpl = "npm explain <package>"
+tags = ["npm", "why", "explain", "dependency"]
+
+  [[cmd.var]]
+  name     = "package"
+  remember = "none"
+
+[[cmd]]
+title = "List outdated npm packages"
+desc = "Show installed packages with newer versions available."
+tmpl = "npm outdated"
+tags = ["npm", "outdated", "update"]
+
+[[cmd]]
+title = "Bump npm version"
+desc = "Bump the package version and create a version commit and tag."
+tmpl = "npm version <bump>"
+tags = ["npm", "version", "release"]
+
+  [[cmd.var]]
+  name     = "bump"
+  values   = ["patch", "minor", "major", "prerelease"]
+  default  = "patch"
+  strict   = true
+  remember = "none"

@@ -1,20 +1,19 @@
 package config
 
 import (
-	"embed"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
 
+	"github.com/liliumapps/commando/cheats"
 	"github.com/liliumapps/commando/internal/persist"
 )
 
-// sampleCheats embeds the built-in cheat files shipped with commando so that a
-// fresh installation has useful content without any manual setup.
-//
-//go:embed cheats/*.toml
-var sampleCheats embed.FS
+// sampleCheats is the set of built-in cheat packs shipped with commando (the
+// top-level cheats/ directory), so a fresh installation has useful content
+// without any manual setup.
+var sampleCheats fs.FS = cheats.FS
 
 type sampleManifest struct {
 	Files []string `toml:"file"`
@@ -22,12 +21,15 @@ type sampleManifest struct {
 
 // SampleFiles returns the base names of the embedded sample cheat files.
 func SampleFiles() ([]string, error) {
-	entries, err := fs.ReadDir(sampleCheats, "cheats")
+	entries, err := fs.ReadDir(sampleCheats, ".")
 	if err != nil {
 		return nil, err
 	}
 	names := make([]string, 0, len(entries))
 	for _, e := range entries {
+		if e.IsDir() || filepath.Ext(e.Name()) != ".toml" {
+			continue
+		}
 		names = append(names, e.Name())
 	}
 	return names, nil
@@ -35,7 +37,7 @@ func SampleFiles() ([]string, error) {
 
 // SampleData returns the raw bytes of an embedded sample cheat file by base name.
 func SampleData(name string) ([]byte, error) {
-	return sampleCheats.ReadFile(filepath.Join("cheats", name))
+	return fs.ReadFile(sampleCheats, name)
 }
 
 // SeedCheats offers each embedded sample file once. A manifest records samples

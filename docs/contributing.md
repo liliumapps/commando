@@ -45,8 +45,9 @@ Commando follows the entry/provider architecture described in
 
 ```text
 main.go                    thin entrypoint → internal/cli
+cheats/                    built-in cheat packs (embedded; contribute new ones here)
 internal/
-├── cli/                   command dispatch: search, init, add, history, bookmark
+├── cli/                   command dispatch: search, init, add, history, bookmark, cheats
 ├── app/                   wiring: aggregate providers, post-process, backend
 ├── entry/                 the Entry + VarSpec contract
 ├── provider/              providers that emit entries
@@ -56,9 +57,10 @@ internal/
 ├── resolve/               template resolution, cross-var refs
 ├── template/              template parsing (<var>, [optional])
 ├── rank/                  frecency ranking + fuzzy matching
-├── state/                 plain-file persistence (memory.toml, usage.toml)
+├── state/                 plain-file persistence (memory, usage, fills)
 ├── bookmark/              bookmark store
 ├── config/                config load + validate, seeded cheats
+├── sources/               cheat sources: git repos, review, loading
 ├── shell/                 zsh, Bash, and Fish integration snippets
 └── tui/                   Bubble Tea: list view + fill-in form + preview
 ```

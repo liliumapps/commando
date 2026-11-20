@@ -1,0 +1,87 @@
+# SSH cheat sheet for commando.
+#
+# Host candidates come from the `Host` lines in ~/.ssh/config (wildcard
+# patterns are skipped); you can always type any other host.
+
+[[vars.ssh]]
+name = "host"
+src  = "awk 'tolower($1) == \"host\" { for (i = 2; i <= NF; i++) if ($i !~ /[*?!]/) print $i }' ~/.ssh/config 2>/dev/null"
+
+[[cmd]]
+title = "SSH to host"
+desc = "Open an SSH session, optionally with a port and identity file."
+tmpl = "ssh [-p <port>] [-i <identity>] <host>"
+tags = ["ssh", "remote", "login"]
+use  = ["ssh"]
+
+  [[cmd.var]]
+  name    = "port"
+  pattern = '^[0-9]+$'
+
+  [[cmd.var]]
+  name = "identity"
+  src  = "ls ~/.ssh/*.pub 2>/dev/null | sed 's/\\.pub$//'"
+
+[[cmd]]
+title = "Copy files to host"
+desc = "Copy local files to a remote directory with scp."
+tmpl = "scp [-P <port>] <files> <host>:<dest>"
+tags = ["ssh", "scp", "copy", "upload"]
+use  = ["ssh"]
+
+  [[cmd.var]]
+  name    = "port"
+  pattern = '^[0-9]+$'
+
+  [[cmd.var]]
+  name  = "files"
+  multi = true
+  each  = '"{}"'
+
+  [[cmd.var]]
+  name    = "dest"
+  default = "~"
+
+[[cmd]]
+title = "Forward a local port"
+desc = "Forward a local port to a target reachable from the SSH host."
+tmpl = "ssh -N -L <local_port>:<target>:<target_port> <host>"
+tags = ["ssh", "tunnel", "port", "forward"]
+use  = ["ssh"]
+
+  [[cmd.var]]
+  name    = "local_port"
+  pattern = '^[0-9]+$'
+
+  [[cmd.var]]
+  name    = "target"
+  default = "localhost"
+
+  [[cmd.var]]
+  name    = "target_port"
+  pattern = '^[0-9]+$'
+
+[[cmd]]
+title = "Copy public key to host"
+desc = "Install your public key in the host's authorized_keys."
+tmpl = "ssh-copy-id [-i <identity>] <host>"
+tags = ["ssh", "key", "authorized_keys"]
+use  = ["ssh"]
+
+  [[cmd.var]]
+  name = "identity"
+  src  = "ls ~/.ssh/*.pub 2>/dev/null"
+
+[[cmd]]
+title = "Generate SSH key"
+desc = "Create a new ed25519 key pair."
+tmpl = "ssh-keygen -t ed25519 -C \"<comment>\" -f <file>"
+tags = ["ssh", "key", "keygen"]
+
+  [[cmd.var]]
+  name = "comment"
+
+  [[cmd.var]]
+  name     = "file"
+  default  = "~/.ssh/id_ed25519"
+  remember = "none"

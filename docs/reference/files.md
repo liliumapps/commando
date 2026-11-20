@@ -14,6 +14,7 @@ map of what lives where.
 ~/.config/commando/                 ← config root  ($XDG_CONFIG_HOME/commando)
 ├── config.toml                     ← key binding, redaction, custom providers
 ├── bookmarks.toml                  ← saved commands + tags/notes
+├── sources.toml                    ← cheat sources and their reviewed commits
 └── cheats/
     ├── git.toml                    ← seeded on first run
     ├── docker.toml                 ← seeded on first run
@@ -24,6 +25,9 @@ map of what lives where.
 ~/.local/share/commando/            ← data root  ($XDG_DATA_HOME/commando)
 ├── memory.toml                     ← remembered variable values (frecency)
 ├── usage.toml                      ← per-entry launch counts (ranking)
+├── fills.toml                      ← recent complete form fills per cheat
+├── repos/                          ← shallow clones of cheat sources
+│   └── <name>-<hash>/
 └── data/                           ← auxiliary files for cheat `src` commands
                                        (exposed as $COMMANDO_DATA_DIR)
 
@@ -43,9 +47,12 @@ Commando at once; leave them in place.
 |---|---|---|
 | `config.toml` | you write | Key binding, history redaction denylist, custom providers. See [Configuration](configuration.md). |
 | `cheats/*.toml` | you + `commando add` | Cheat sheet entries. Every `.toml` here is loaded. See [Cheat sheets](../guide/cheat-sheets.md). |
+| `sources.toml` | `commando cheats` + you | Cheat sources: `url`, optional `file`, the reviewed `commit`, and `updated`. See [Cheat packs & repos](../guide/cheat-packs.md#how-sources-are-stored). |
+| `repos/<name>-<hash>/` | Commando | One shallow clone per source URL, shared by its sources. Only the reviewed commit is loaded. |
 | `bookmarks.toml` | Commando + you | Saved commands with tags and notes. See [Bookmarks](../guide/bookmarks.md). |
 | `memory.toml` | Commando + you | Remembered variable values, keyed by `(command, variable, scope)`. A cheat's `id`, when set, identifies the command. See [Argument memory](../guide/argument-memory.md). |
 | `usage.toml` | Commando | Per-entry launch counts and last-used times, used to rank the list by frecency. |
+| `fills.toml` | Commando + you | Recent complete sets of values per cheat, offered in the form's Recent block. See [Recent fills](../guide/argument-memory.md#recent-fills). |
 | cache `*.json` | Commando | Output of `src` and provider `list` commands that set `cache`. Disposable. See [The cache directory](#the-cache-directory). |
 | `data/*` | you | Arbitrary candidate-list files your cheats read via `$COMMANDO_DATA_DIR`. |
 | `$HISTFILE` | Commando reads | Your shell's own history file. Commando reads it live and never modifies or copies it. |
@@ -65,7 +72,7 @@ Concurrent processes lock and merge the latest file before writing. Remembered
 values are capped at 25 per command-variable-scope bucket, and usage ranking is
 capped at the 5,000 most recent entries, so these files remain bounded.
 
-If `memory.toml`, `usage.toml`, or `bookmarks.toml` exists but cannot be
+If `memory.toml`, `usage.toml`, `fills.toml`, or `bookmarks.toml` exists but cannot be
 parsed (for example after a bad hand edit), Commando moves it aside to
 `<name>.corrupt-<unix time>`, such as `memory.toml.corrupt-1751500000`, and
 starts with that file empty instead of failing. `commando doctor` warns about
@@ -126,6 +133,7 @@ everything under a single dotfiles tree.
 | Both state files | `commando state clear all` |
 | Bookmarks | Delete `bookmarks.toml` or edit it |
 | A cheat | Edit or delete the relevant `cheats/*.toml` |
+| A cheat source | `commando cheats remove <git-url> [file]` |
 | Cached command output | Delete the [cache directory](#the-cache-directory) |
 | Everything | Remove `~/.config/commando`, `~/.local/share/commando`, and the cache directory |
 

@@ -244,6 +244,23 @@ func (fs *fieldState) ensureMemo() {
 // matchesCandidate reports whether v exactly equals one of the candidate values
 // (the inserted value, not the display label — that is what commit stores and
 // what strictness is checked against).
+// inlineAllowed reports whether v is one of the field's inline `values`, for
+// a field whose candidates have not been loaded yet. It applies only when the
+// inline values are the whole list (no src) and are inserted as written (no
+// value template); ok is false when it cannot tell without loading.
+func (fs *fieldState) inlineAllowed(v string) (allowed, ok bool) {
+	spec := fs.field.Spec
+	if fs.loaded || spec.Src != "" || len(spec.Values) == 0 || spec.Value != "" || spec.Match != "" || len(spec.Columns) > 0 {
+		return false, false
+	}
+	for _, c := range spec.Values {
+		if strings.TrimSpace(c) == v {
+			return true, true
+		}
+	}
+	return false, true
+}
+
 func (fs *fieldState) matchesCandidate(v string) bool {
 	if fs.valueSet == nil {
 		fs.setData(fs.data)
@@ -490,6 +507,9 @@ func (fs *fieldState) strictViolation() bool {
 	if fs.input == "" {
 		return false // empty is handled by required/optional rules, not strict
 	}
+	if allowed, ok := fs.inlineAllowed(fs.input); ok {
+		return !allowed // not loaded yet, but its inline values are the list
+	}
 	return !fs.matchesCandidate(fs.input)
 }
 
@@ -554,6 +574,9 @@ type formModel struct {
 	previewData    PreviewData
 	previewLoading bool
 	previewRequest uint64
+
+	// recent is the Recent fills block offered when the form opens.
+	recent recentBlock
 }
 
 func newFormModel(e entry.Entry, plan *resolve.Plan) *formModel {

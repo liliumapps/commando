@@ -77,6 +77,7 @@ nav:
       - Concepts: guide/concepts.md
       - The TUI: guide/tui.md
       - Cheat sheets: guide/cheat-sheets.md
+      - Cheat packs & repos: guide/cheat-packs.md
       - Template syntax: guide/templates.md
       - Variables: guide/variables.md
       - Argument memory: guide/argument-memory.md

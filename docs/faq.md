@@ -50,7 +50,7 @@ or press ++tab++ to cycle; see
 
 Two independent controls:
 [`remember = "none"`](guide/argument-memory.md#secrets-always-use-remember-none)
-on a variable keeps its *values* out of `memory.toml`, and the
+on a variable keeps its *values* out of `memory.toml` and `fills.toml`, and the
 [redaction denylist](guide/shell-history.md#redaction) hides secret-looking
 *commands* from history. The denylist and built-in secret detectors also keep
 secret-looking values out of memory and refuse secret-looking bookmarks
@@ -64,9 +64,11 @@ searchable tags and notes, sorted to the top.
 
 ## Can I share my cheat sheets?
 
-Yes — they're plain TOML files in `~/.config/commando/cheats/`. Commit them to a
-dotfiles repo, sync across machines, or share with your team. Every `.toml` in
-that directory is loaded.
+Yes. Put your `.toml` cheat files in a git repo, and anyone can add the whole
+repo, or a single file from it, with `commando cheats add <git-url> [file]`.
+Commando shows every shell command the cheats would run and asks before
+trusting them; `commando cheats update` pulls changes the same way. See
+[Cheat packs & repos](guide/cheat-packs.md).
 
 ## How do I change the summon key?
 

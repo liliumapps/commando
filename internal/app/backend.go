@@ -45,6 +45,10 @@ type fileBackend struct {
 	// are never remembered and such commands are never bookmarked from the
 	// TUI. nil disables the check.
 	redact func(string) bool
+
+	// matchers caches the compiled history matcher per cheat (guarded by
+	// cacheMu); a nil value records a template that cannot be matched.
+	matchers map[string]*fillMatcher
 }
 
 // ErrSecretBookmark is returned when the TUI asks to bookmark a command that
@@ -166,8 +170,7 @@ func (b *fileBackend) Remember(e entry.Entry, f resolve.Field, value string) {
 	if b.state == nil {
 		return
 	}
-	if b.redact != nil && strings.TrimSpace(value) != "" &&
-		(b.redact(value) || b.redact(f.Name+"="+value)) {
+	if b.secretValue(f.Name, value) {
 		return
 	}
 	scope := b.scopeKey(f.Spec.Remember)
@@ -339,4 +342,228 @@ func shellIssue(res shellcmd.Result) string {
 		return res.Err.Error()
 	}
 	return "command failed"
+}
+
+// Compile-time check that fileBackend offers recent fills to the TUI.
+var _ tui.FillsBackend = (*fileBackend)(nil)
+
+// maxHistoryFills caps how many history-only fills are offered per form.
+const maxHistoryFills = 20
+
+// maxHistoryLines caps how many history lines are matched per form open.
+const maxHistoryLines = 5000
+
+// fillsEligible reports whether e records and offers recent fills: authored
+// cheat templates only (history, bookmarks, and project commands are literal).
+func fillsEligible(e entry.Entry) bool {
+	return e.Source == entry.SourceCheat && e.Kind == entry.CommandTemplate
+}
+
+// fillPlan returns the entry's plan and the fields whose values take part in
+// fills (not multi, not remember="none"), or nil when fills do not apply.
+func fillPlan(e entry.Entry) (plan *resolve.Plan, fields map[string]resolve.Field) {
+	if !fillsEligible(e) {
+		return nil, nil
+	}
+	plan, err := resolve.NewPlan(e)
+	if err != nil || !plan.HasVars() {
+		return nil, nil
+	}
+	fields = make(map[string]resolve.Field)
+	for _, f := range plan.Fields {
+		if !f.Spec.Multi && f.Spec.Remember.Remembers() {
+			fields[f.Name] = f
+		}
+	}
+	if len(fields) == 0 {
+		return nil, nil
+	}
+	return plan, fields
+}
+
+// fillScopeKey is the storage scope of an entry's fills: the narrowest scope
+// among its remembered variables (dir, then project, then global).
+func (b *fileBackend) fillScopeKey(plan *resolve.Plan) string {
+	narrowest := entry.ScopeNone
+	order := map[entry.Scope]int{entry.ScopeNone: 0, entry.ScopeGlobal: 1, entry.ScopeProject: 2, entry.ScopeDir: 3}
+	for _, f := range plan.Fields {
+		s := f.Spec.Remember.Effective()
+		if order[s] > order[narrowest] {
+			narrowest = s
+		}
+	}
+	return b.scopeKey(narrowest)
+}
+
+// secretNameParts mark a variable whose values are secrets by name alone.
+var secretNameParts = []string{"password", "passwd", "passphrase", "secret", "token", "apikey", "api_key", "api-key", "private_key", "privatekey", "credential"}
+
+// secretValue reports whether a variable's value must not be stored: the value
+// itself looks secret (denylist or built-in detectors), or the variable's name
+// says it holds one. The name and value are not joined into "name=value"
+// before matching, because history patterns such as `AWS_*=` would then flag
+// ordinary variables like `aws_account`.
+func (b *fileBackend) secretValue(name, value string) bool {
+	if strings.TrimSpace(value) == "" {
+		return false
+	}
+	if b.redact != nil && b.redact(value) {
+		return true
+	}
+	lower := strings.ToLower(name)
+	for _, part := range secretNameParts {
+		if strings.Contains(lower, part) {
+			return true
+		}
+	}
+	return false
+}
+
+// fillLooksSecret reports whether any value looks like a secret, by itself or
+// as "<var>=<value>", the same test Remember applies to single values.
+func (b *fileBackend) fillLooksSecret(values map[string]string) bool {
+	for name, v := range values {
+		if b.secretValue(name, v) {
+			return true
+		}
+	}
+	return false
+}
+
+// fillableValues keeps only the non-empty values of fill fields.
+func fillableValues(values map[string]string, fields map[string]resolve.Field) map[string]string {
+	out := make(map[string]string, len(values))
+	for name, v := range values {
+		if _, ok := fields[name]; ok && v != "" {
+			out[name] = v
+		}
+	}
+	return out
+}
+
+// RememberFill records a completed form as one fill. Values of multi and
+// remember="none" variables are dropped; the whole record is skipped when any
+// value looks like a secret.
+func (b *fileBackend) RememberFill(e entry.Entry, values map[string]string) {
+	if b.state == nil {
+		return
+	}
+	plan, fields := fillPlan(e)
+	if plan == nil {
+		return
+	}
+	vals := fillableValues(values, fields)
+	if len(vals) == 0 || b.fillLooksSecret(vals) {
+		return
+	}
+	scope := b.fillScopeKey(plan)
+	if scope == "" {
+		return
+	}
+	_ = b.state.RememberFill(e.ID(), scope, vals)
+}
+
+// ForgetFill deletes a stored fill.
+func (b *fileBackend) ForgetFill(e entry.Entry, values map[string]string) error {
+	if b.state == nil {
+		return nil
+	}
+	plan, _ := fillPlan(e)
+	if plan == nil {
+		return nil
+	}
+	scope := b.fillScopeKey(plan)
+	if scope == "" {
+		return nil
+	}
+	return b.state.ForgetFill(e.ID(), scope, values)
+}
+
+// RecentFills returns e's stored fills (frecency order) followed by fills
+// found in history: lines (newest first, at most 5,000) that match the
+// cheat's template, grouped by identical values. A history match equal to a
+// stored fill is merged into it. Secret-looking lines and values are skipped.
+func (b *fileBackend) RecentFills(ctx context.Context, e entry.Entry, history []entry.Entry) []tui.Fill {
+	plan, fields := fillPlan(e)
+	if plan == nil {
+		return nil
+	}
+	var out []tui.Fill
+	index := make(map[string]int)
+	if scope := b.fillScopeKey(plan); scope != "" && b.state != nil {
+		for _, f := range b.state.RecallFills(e.ID(), scope) {
+			vals := fillableValues(f.Values, fields)
+			if len(vals) == 0 || b.fillLooksSecret(vals) {
+				continue
+			}
+			sig := state.FillSignature(vals)
+			if _, dup := index[sig]; dup {
+				continue
+			}
+			index[sig] = len(out)
+			out = append(out, tui.Fill{Values: vals, Count: f.Count, LastUsed: f.LastN})
+		}
+	}
+
+	fm := b.fillMatcherFor(e, plan, fields)
+	if fm == nil {
+		return out
+	}
+	histOnly := 0
+	for i, h := range history {
+		if i >= maxHistoryLines {
+			break
+		}
+		if i%128 == 0 && ctx.Err() != nil {
+			return nil
+		}
+		line := h.Template
+		if b.redact != nil && b.redact(line) {
+			continue
+		}
+		vals, ok := fm.match(line)
+		if !ok || len(vals) == 0 || b.fillLooksSecret(vals) {
+			continue
+		}
+		sig := state.FillSignature(vals)
+		if at, seen := index[sig]; seen {
+			if out[at].FromHistory {
+				out[at].Count++
+			}
+			out[at].LastUsed = max(out[at].LastUsed, h.LastUsed)
+			continue
+		}
+		if histOnly >= maxHistoryFills {
+			continue
+		}
+		histOnly++
+		index[sig] = len(out)
+		out = append(out, tui.Fill{Values: vals, Count: 1, LastUsed: h.LastUsed, FromHistory: true})
+	}
+	return out
+}
+
+// fillMatcherFor returns the cached history matcher for e (nil when its
+// template cannot be matched safely).
+func (b *fileBackend) fillMatcherFor(e entry.Entry, plan *resolve.Plan, fields map[string]resolve.Field) *fillMatcher {
+	key := e.ID() + "\x00" + e.Template
+	b.cacheMu.Lock()
+	defer b.cacheMu.Unlock()
+	if fm, ok := b.matchers[key]; ok {
+		return fm
+	}
+	multi := make(map[string]bool)
+	for _, f := range plan.Fields {
+		if f.Spec.Multi {
+			multi[f.Name] = true
+		}
+	}
+	fm := newFillMatcher(e.Template,
+		func(name string) bool { _, ok := fields[name]; return ok },
+		func(name string) bool { return multi[name] })
+	if b.matchers == nil {
+		b.matchers = make(map[string]*fillMatcher)
+	}
+	b.matchers[key] = fm
+	return fm
 }

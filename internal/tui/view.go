@@ -212,20 +212,60 @@ func (m *Model) selectedEntryDetails() (description, command string) {
 // lines when fewer): the box gives up preview lines and then parameter lines
 // before the candidates are squeezed.
 func (m *Model) viewForm() string {
-	footer := m.formFooter()
+	showRecent := m.recentShown()
+	footer := m.formFooter(showRecent)
 	footerH := lipgloss.Height(footer)
 
 	candLines := len(strings.Split(strings.TrimRight(m.candidatesView(maxCandidateRows), "\n"), "\n"))
 	minMid := min(minCandidateRows, candLines)
-	boxBudget := m.viewHeight() - footerH - minMid
+	box := m.fittedCommandBox(m.viewHeight() - footerH - minMid)
 
+	// The Recent block sits between the candidates and the input. It yields
+	// first: it only takes room the box and the candidate minimum leave free.
+	var recent []string
+	if showRecent {
+		recent = m.recentView(m.recentRowBudget())
+	}
+
+	boxH := lipgloss.Height(box)
+	middleH := max(0, m.viewHeight()-boxH-footerH-len(recent))
+	midLimit := min(maxCandidateRows, max(1, middleH))
+	// While the Recent block owns the arrows, no candidate is drawn as the
+	// highlighted pick.
+	m.dimCandidates = showRecent
+	mid := strings.Split(strings.TrimRight(m.candidatesView(midLimit), "\n"), "\n")
+	m.dimCandidates = false
+	mid = clampLines(mid, middleH)
+	for len(mid) < middleH {
+		mid = append([]string{""}, mid...)
+	}
+
+	parts := []string{box}
+	if middleH > 0 {
+		parts = append(parts, strings.Join(mid, "\n"))
+	}
+	if len(recent) > 0 {
+		parts = append(parts, strings.Join(recent, "\n"))
+	}
+	parts = append(parts, footer)
+	workspace := strings.Join(parts, "\n")
+	if lipgloss.Height(workspace) > m.viewHeight() {
+		lines := strings.Split(workspace, "\n")
+		workspace = strings.Join(clampLines(lines, m.viewHeight()), "\n")
+	}
+	return workspace
+}
+
+// fittedCommandBox renders the command box within budget lines, giving up
+// preview lines and then parameter lines until it fits (or cannot shrink).
+func (m *Model) fittedCommandBox(budget int) string {
 	paramLimit := 6
 	if m.viewHeight() < 16 {
 		paramLimit = 2
 	}
 	previewRows := maxPreviewRows
 	box := m.commandBoxView(paramLimit, previewRows)
-	for lipgloss.Height(box) > boxBudget {
+	for lipgloss.Height(box) > budget {
 		switch {
 		case previewRows > 3:
 			previewRows--
@@ -243,27 +283,7 @@ func (m *Model) viewForm() string {
 		}
 		box = m.commandBoxView(paramLimit, previewRows)
 	}
-
-	boxH := lipgloss.Height(box)
-	middleH := max(0, m.viewHeight()-boxH-footerH)
-	midLimit := min(maxCandidateRows, max(1, middleH))
-	mid := strings.Split(strings.TrimRight(m.candidatesView(midLimit), "\n"), "\n")
-	mid = clampLines(mid, middleH)
-	for len(mid) < middleH {
-		mid = append([]string{""}, mid...)
-	}
-
-	parts := []string{box}
-	if middleH > 0 {
-		parts = append(parts, strings.Join(mid, "\n"))
-	}
-	parts = append(parts, footer)
-	workspace := strings.Join(parts, "\n")
-	if lipgloss.Height(workspace) > m.viewHeight() {
-		lines := strings.Split(workspace, "\n")
-		workspace = strings.Join(clampLines(lines, m.viewHeight()), "\n")
-	}
-	return workspace
+	return box
 }
 
 // commandBoxView renders the bordered command box: description, highlighted
@@ -407,7 +427,7 @@ func (m *Model) candidatesView(limit int) string {
 	// candidate (fs.cursor) sits at the bottom, right above the input, and other
 	// candidates stack upward.
 	start, end := windowBounds(fs.cursor, len(vis), limit)
-	highlight := fs.cursorHighlighted()
+	highlight := fs.cursorHighlighted() && !m.dimCandidates
 	var rows []string
 	for i := start; i < end; i++ {
 		c := vis[i]
@@ -440,7 +460,9 @@ func (m *Model) candidatesView(limit int) string {
 
 // formFooter renders the bottom-pinned region: the active parameter's input
 // line, an optional error, and key hints. All input happens here at the bottom.
-func (m *Model) formFooter() string {
+// recent selects the Recent block's key hints; the height is the same either
+// way.
+func (m *Model) formFooter(recent bool) string {
 	st := m.styles
 	fs := m.form.cur()
 
@@ -466,7 +488,11 @@ func (m *Model) formFooter() string {
 		b.WriteString(st.errText.Render("✗ "+m.formErr) + "\n")
 	}
 
-	b.WriteString(truncate(m.renderHelp(m.formHints(fs)), m.viewWidth()))
+	hints := m.formHints(fs)
+	if recent {
+		hints = m.recentHints()
+	}
+	b.WriteString(truncate(m.renderHelp(hints), m.viewWidth()))
 	return b.String()
 }
 

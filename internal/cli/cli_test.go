@@ -221,3 +221,46 @@ func TestBookmarkAddRefusesSecretUnlessForced(t *testing.T) {
 		t.Fatalf("--force should save; code=%d stderr=%q", code, errOut.String())
 	}
 }
+
+func TestCheatsCommand(t *testing.T) {
+	t.Setenv("COMMANDO_HOME", t.TempDir())
+	var out, errb bytes.Buffer
+	if code := runCheats([]string{"list"}, &out, &errb, strings.NewReader(""), false); code != 0 || !strings.Contains(out.String(), "No cheat sources") {
+		t.Fatalf("list = %d %q %q", code, out.String(), errb.String())
+	}
+	for _, args := range [][]string{nil, {"bogus"}, {"add"}, {"add", "a", "b", "c"}, {"add", "--name", "x", "https://h/x"}, {"update", "x"}, {"remove"}} {
+		out.Reset()
+		errb.Reset()
+		if code := runCheats(args, &out, &errb, strings.NewReader(""), false); code != 2 {
+			t.Errorf("%v: exit %d, want 2", args, code)
+		}
+	}
+	errb.Reset()
+	if code := runCheats([]string{"add", "/tmp/local/repo"}, &out, &errb, strings.NewReader(""), false); code != 1 || !strings.Contains(errb.String(), "unsupported repository URL") {
+		t.Errorf("local path: %d %q", code, errb.String())
+	}
+	errb.Reset()
+	if code := runCheats([]string{"add", "https://h/x", "../x.toml"}, &out, &errb, strings.NewReader(""), false); code != 1 || !strings.Contains(errb.String(), "inside the repository") {
+		t.Errorf("bad file: %d %q", code, errb.String())
+	}
+	errb.Reset()
+	if code := runCheats([]string{"remove", "https://h/x"}, &out, &errb, strings.NewReader(""), false); code != 1 || !strings.Contains(errb.String(), "not a source") {
+		t.Errorf("remove missing: %d %q", code, errb.String())
+	}
+}
+
+func TestCheatsConfirmer(t *testing.T) {
+	var out, errb bytes.Buffer
+	if confirmer(&out, &errb, strings.NewReader("y\n"), true, false)() != true {
+		t.Error("y on a tty should trust")
+	}
+	if confirmer(&out, &errb, strings.NewReader("\n"), true, false)() {
+		t.Error("the default is no")
+	}
+	if confirmer(&out, &errb, strings.NewReader("y\n"), false, false)() {
+		t.Error("without a terminal nothing is trusted")
+	}
+	if !confirmer(&out, &errb, strings.NewReader(""), false, true)() {
+		t.Error("--yes trusts")
+	}
+}

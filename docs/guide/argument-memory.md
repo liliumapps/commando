@@ -108,10 +108,101 @@ your favorite AWS region is the same everywhere (`global`).
   value — select one deliberately with ++up++ then ++enter++.
 - An author-defined `default` still pre-fills the input regardless of memory.
 
+## Recent fills
+
+Besides each variable's values, Commando remembers every completed cheat form
+**as a whole**. The next time you open that cheat, a **Recent** block sits
+directly above the first input and offers the value sets you used before, so a
+five-variable command you run with the same values every day is one keystroke
+away:
+
+```text
+  recent
+    pod=web-1  namespace=shop  since=1h   (1×) from history
+  ❯ pod=api-7d9f  namespace=payments   (4×, 2h ago)
+❯ pod = ▊
+  ↑↓ recent · ⏎ fill · alt+⏎ run · ^d delete · type skip · esc back
+```
+
+Each row lists `name=value` pairs in field order, with how often and how recently the
+set was used. Stored fills come first, hottest by [frecency](#frecency-ranking);
+fills found in shell history follow, newest first. Up to five rows show at once
+and the block scrolls; in a short terminal it shrinks or hides before the
+candidate list does.
+
+| Key | Action |
+|---|---|
+| ++up++ / ++down++ | Move within the block. ++down++ on the bottom row hides the block |
+| ++enter++ | Fill every field, then focus the first field still empty or invalid, or the last field when everything is set, so one more ++enter++ runs it |
+| ++alt+enter++ / ++ctrl+j++ | Fill every field and run at once, after the same validation as a normal run |
+| ++ctrl+d++ | Delete a stored fill: the first press asks, a second press deletes. History rows can't be deleted |
+| Typing | Hides the block; the keystroke goes to the first field |
+| ++esc++ | Return to the search list |
+
+A fill sets every remembered field. An optional field the fill doesn't include
+is skipped (it was skipped that time too); multi-select and `remember = "none"`
+fields are left for you to fill in, and validation stops at them if they are
+required.
+
+### What gets stored
+
+Running a cheat form (not bookmarking it) records one row in
+`~/.local/share/commando/fills.toml`:
+
+```toml
+[[fill]]
+id     = "..."          # the same entry key memory uses
+scope  = "global"
+values = { namespace = "payments", pod = "api-7d9f" }
+count  = 4
+last   = 1763631000
+```
+
+- An identical value set bumps `count` and `last` instead of adding a row.
+- The **scope** is the narrowest one among the cheat's remembered variables: a
+  cheat with one `remember = "project"` variable keeps its fills per project, a
+  `dir` variable makes them per directory, otherwise they are global.
+- Each `(cheat, scope)` keeps its 20 hottest fills by frecency.
+- Only authored cheat templates with at least one variable record fills;
+  history, bookmarks, and project commands don't.
+
+### Matching shell history
+
+When the form opens, Commando also looks through your newest 5,000 history
+commands, in the background, for lines that are instances of the cheat's
+template:
+
+- literal text must match exactly, but any run of spaces matches any run of
+  spaces;
+- each `<var>` matches one shell word: a run of non-space characters, or a
+  single- or double-quoted string. Quotes around a plain word are dropped
+  (`'payments'` becomes `payments`); a value that needs them, such as
+  `"fix login bug"`, keeps them, since form values are inserted as typed;
+- an optional `[ ... ]` segment may be absent;
+- a variable used twice must have the same value both times.
+
+So `kubectl logs <pod> -n <ns>` matches `kubectl logs api-7d9f -n payments` but
+not `kubectl logs api-7d9f` or `echo kubectl logs api -n x`. A template with no
+fixed word outside optional segments (such as a bare `<cmd>`) is never matched.
+Matches with the same values form one row, counted per matching line; a match
+equal to a stored fill merges into it. History fills are shown, never stored.
+
+### Privacy
+
+Fills follow the same rules as single values, applied to the whole record:
+
+- `remember = "none"` values are never stored, nor taken from history.
+- If any value looks like a secret (the [redaction](shell-history.md#redaction)
+  patterns and detectors, checked against the value and `<variable>=<value>`),
+  the whole fill is skipped. Secret-looking history lines are skipped as well.
+
 ## Editing or clearing memory
 
-`memory.toml` is a plain TOML file — open it, edit it, or delete entries by
-hand. To wipe all memory, delete the file; Commando recreates it as needed.
+`memory.toml` and `fills.toml` are plain TOML files — open them, edit them, or
+delete entries by hand. To wipe all memory, run `commando state clear memory`
+(which clears both files) or delete the files; Commando recreates them as
+needed. A file that fails to parse is moved aside to
+`<name>.corrupt-<unix time>` and Commando starts with it empty.
 
 ## Next
 

@@ -46,6 +46,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 		return cmdPromote(rest, stdout, stderr)
 	case "bookmark", "bm":
 		return cmdBookmark(rest, stdout, stderr)
+	case "cheats":
+		return cmdCheats(rest, stdout, stderr)
 	case "version", "--version", "-v":
 		fmt.Fprintf(stdout, "commando %s\n", version)
 		return 0
@@ -76,6 +78,7 @@ Commands:
   state clear ...    Clear remembered arguments or usage ranking
   promote [flags]    Promote a command or history entry into a managed cheat
   bookmark ...       Manage bookmarks: add/list/remove (also: bm)
+  cheats ...         Manage cheat sources (git repos): add/list/update/remove
   version            Print the version
   help               Show this help
 

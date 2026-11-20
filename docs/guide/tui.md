@@ -119,6 +119,22 @@ go and stays near the active input even in a tall terminal.
 | ++esc++ | Return to the search list |
 | ++ctrl+c++ | Quit entirely |
 
+### Recent fills
+
+When a cheat's form opens and you have run it before (or your shell history has
+lines matching it), a **Recent** block appears above the first input with the
+value sets you used. While it is shown, it takes these keys; see
+[Recent fills](argument-memory.md#recent-fills) for details.
+
+| Key | Action |
+|---|---|
+| ++up++ / ++down++ | Move within the block; ++down++ on the bottom row hides it |
+| ++enter++ | Fill every field, then focus the first field still empty or invalid, or the last field when all are set (one more ++enter++ runs it) |
+| ++alt+enter++ / ++ctrl+j++ | Fill every field and run immediately (after full validation) |
+| ++ctrl+d++ | Delete the highlighted stored fill (press twice). History rows can't be deleted |
+| Any other key | Hides the block and acts as usual (typing goes to the first field) |
+| ++esc++ | Return to the search list |
+
 ### Field types at a glance
 
 - **Plain field** — free text. A `default` prefills it. Type to overwrite.
@@ -158,5 +174,6 @@ Otherwise it assembles the command and:
   Fish widget) or prints it to stdout (when run directly).
 - **With `--exec`:** runs it immediately.
 
-Either way, the values you entered are [remembered](argument-memory.md) and the
+Either way, the values you entered are [remembered](argument-memory.md), the
+whole form is saved as a [recent fill](argument-memory.md#recent-fills), and the
 entry's usage count is bumped for future ranking.

@@ -33,6 +33,7 @@ The full documentation lives at **[commando.liliumapps.com](https://commando.lil
 - [Installation](https://commando.liliumapps.com/getting-started/installation/) and
   [quickstart](https://commando.liliumapps.com/getting-started/quickstart/)
 - [Cheat sheets](https://commando.liliumapps.com/guide/cheat-sheets/),
+  [cheat packs and repos](https://commando.liliumapps.com/guide/cheat-packs/),
   [templates](https://commando.liliumapps.com/guide/templates/), and
   [variables](https://commando.liliumapps.com/guide/variables/)
 - [Project commands](https://commando.liliumapps.com/guide/project-commands/),
@@ -114,6 +115,10 @@ commando state clear memory|usage|all  Reset remembered state
 commando bookmark add <cmd> Save a bookmark (--tags "...", --note "...", --force)
 commando bookmark list      List bookmarks
 commando bookmark remove <cmd>  Remove a bookmark
+commando cheats add <git-url> [file]  Add a cheat repo, or one file in it (--yes)
+commando cheats list        List cheat sources
+commando cheats update      Update cheat sources, reviewing changed commands (--yes)
+commando cheats remove <git-url> [file]  Remove a cheat source
 commando version            Print the version
 ```
 
@@ -299,6 +304,24 @@ Set `remember = "none"` on any variable holding sensitive input so its values
 are never written there. Values that look like secrets (by themselves, or as
 `<var>=<value>` against the redaction patterns) are never remembered either.
 
+#### Recent fills
+
+Each completed cheat form is also remembered as a whole, in
+`~/.local/share/commando/fills.toml`. When you open that cheat's form again, a
+**Recent** block above the first input offers the last value sets
+(`namespace=payments  pod=api-7d9f   (4×, 2h ago)`), hottest first; shell-history lines that
+match the cheat's template are offered too, marked `from history`.
+
+- ↑/↓ move within the block; Enter fills every field and jumps to the first
+  field still empty, or to the last field when all are set (Enter again runs);
+  Alt-Enter or Ctrl-J fills and runs, after the usual validation.
+- Ctrl-D twice deletes a stored fill (history rows can't be deleted).
+- Typing, or ↓ past the block, hides it; Esc returns to the list.
+
+Fills follow the same privacy rules: `remember = "none"` and multi-select
+variables are never stored, and a form with any secret-looking value is not
+recorded at all. `commando state clear memory` clears fills too.
+
 ### Shared variable groups
 
 Define a variable group once and reuse it across commands with `use`, instead of
@@ -356,6 +379,29 @@ is still added to the form as a field.
 Add entries interactively with `commando add`, which discovers the variables in
 your template and prompts for their options.
 
+### Cheat packs and repos
+
+Commando ships packs for git, docker, kubectl, files, processes, npm, ssh,
+and the network; they live in [`cheats/`](./cheats) and are seeded on first
+run. To follow cheats someone else maintains, add a git repository as a
+source, either the whole repository (every `*.toml` in it) or one file:
+
+```sh
+commando cheats add https://github.com/acme/team-cheats
+commando cheats add https://github.com/liliumapps/commando cheats/docker.toml
+commando cheats update      # fetch the latest, reviewing changed commands
+commando cheats list
+commando cheats remove https://github.com/acme/team-cheats
+```
+
+Sources are listed in `~/.config/commando/sources.toml` and shallow-cloned
+into `~/.local/share/commando/repos/`. A cheat's `src` and `preview` fields
+run shell commands on your machine, so `add` prints every one of them and
+asks `Trust these commands? [y/N]`, and `update` asks again whenever one is
+new or changed. Only the reviewed commit, recorded in `sources.toml`, is
+loaded. Your own cheats win over a source cheat with the same `id`. See
+[Cheat packs & repos](https://commando.liliumapps.com/guide/cheat-packs/).
+
 ## Data files for cheats
 
 A cheat variable's `src` command runs with `COMMANDO_DATA_DIR` set to
@@ -403,9 +449,12 @@ providers (bookmarks · cheats · project · history)
 |---|---|
 | `~/.config/commando/config.toml` | key binding, redaction denylist, providers |
 | `~/.config/commando/cheats/*.toml` | cheat sheets |
+| `~/.config/commando/sources.toml` | cheat sources (git repos) and their reviewed commits |
+| `~/.local/share/commando/repos/` | shallow clones of cheat sources |
 | `~/.config/commando/bookmarks.toml` | saved commands + tags/notes |
 | `~/.local/share/commando/memory.toml` | remembered variable values (frecency) |
 | `~/.local/share/commando/usage.toml` | per-entry launch counts (ranking) |
+| `~/.local/share/commando/fills.toml` | recent complete form fills per cheat |
 | `<user cache dir>/commando/` | disposable output of `cache`-enabled `src` and provider commands |
 | your `$HISTFILE` (e.g. `~/.zsh_history`) | shell history — read live, never copied |
 
@@ -448,8 +497,8 @@ go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 
 ## Status
 
-Zsh, Bash, and Fish summon widgets are supported. Community cheat repositories
-remain on the roadmap (see [PROPOSAL.md](./PROPOSAL.md) §14).
+Zsh, Bash, and Fish summon widgets are supported, and cheat repositories can
+be added with `commando cheats add`.
 
 ## More from Lilium Apps
 

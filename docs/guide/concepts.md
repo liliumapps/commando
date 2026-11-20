@@ -79,6 +79,8 @@ drive a different front-end in the future without change.
 | `~/.config/commando/bookmarks.toml` | Saved commands + tags/notes |
 | `~/.local/share/commando/memory.toml` | Remembered variable values (frecency) |
 | `~/.local/share/commando/usage.toml` | Per-entry launch counts (ranking) |
+| `~/.local/share/commando/fills.toml` | Recent complete form fills per cheat |
+| `~/.config/commando/sources.toml` | Cheat sources (git repos) and their reviewed commits |
 | `~/.local/share/commando/data/` | Auxiliary data files cheats can read (`$COMMANDO_DATA_DIR`) |
 | your `$HISTFILE` | Shell history — read live, never copied |
 

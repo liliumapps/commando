@@ -1,0 +1,73 @@
+# Network cheat sheet for commando.
+
+[[cmd]]
+title = "Show HTTP response headers"
+desc = "Send a HEAD request and print the response headers."
+tmpl = "curl -sSI <url>"
+tags = ["curl", "http", "headers"]
+
+  [[cmd.var]]
+  name = "url"
+
+[[cmd]]
+title = "Download a file"
+desc = "Download a URL to a file, following redirects and failing on HTTP errors."
+tmpl = "curl -fL -o <output> <url>"
+tags = ["curl", "download", "http"]
+
+  [[cmd.var]]
+  name     = "url"
+  remember = "none"
+
+  [[cmd.var]]
+  name     = "output"
+  remember = "none"
+
+[[cmd]]
+title = "DNS lookup"
+desc = "Look up DNS records for a name."
+tmpl = "dig +short <name> [<type>]"
+tags = ["dns", "dig", "lookup"]
+
+  [[cmd.var]]
+  name = "name"
+
+  [[cmd.var]]
+  name   = "type"
+  values = ["A", "AAAA", "CNAME", "MX", "TXT", "NS", "SOA"]
+
+[[cmd]]
+title = "Check a TCP port"
+desc = "Test whether a host accepts connections on a port."
+tmpl = "nc -vz <host> <port>"
+tags = ["nc", "netcat", "port", "tcp"]
+
+  [[cmd.var]]
+  name = "host"
+
+  [[cmd.var]]
+  name    = "port"
+  pattern = '^[0-9]+$'
+
+[[cmd]]
+title = "Trace route to host"
+desc = "Show the network path to a host."
+tmpl = "traceroute <host>"
+tags = ["traceroute", "route", "network"]
+
+  [[cmd.var]]
+  name = "host"
+
+[[cmd]]
+title = "Ping host"
+desc = "Send a few ICMP echo requests to a host."
+tmpl = "ping -c <count> <host>"
+tags = ["ping", "icmp", "network"]
+
+  [[cmd.var]]
+  name    = "count"
+  default = "4"
+  pattern = '^[0-9]+$'
+
+  [[cmd.var]]
+  name = "host"

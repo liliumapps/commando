@@ -80,16 +80,17 @@ over.
 
 ```text
 ~/.config/commando/cheats/
-├── git.toml         ← seeded on first run
-├── docker.toml      ← seeded on first run
-├── kubectl.toml     ← seeded on first run
-├── files.toml       ← seeded on first run
+├── git.toml         ← seeded on first run (also docker, kubectl, files,
+│                      process, npm, ssh, network)
 └── user.toml        ← where `commando add` appends
 ```
 
 Every `.toml` file in this directory is loaded. Group commands however you
 like — by tool, by project, by team convention. On first run, Commando seeds a
-starter set (git, docker, kubectl, files) so the list isn't empty.
+starter set (git, docker, kubectl, files, process, npm, ssh, network) so the
+list isn't empty. To share cheats or pull in someone else's, add a git repo or
+a single file from one with `commando cheats add`; see
+[Cheat packs & repos](cheat-packs.md).
 
 !!! tip "Data files for candidate lists"
 
