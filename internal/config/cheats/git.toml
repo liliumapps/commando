@@ -1,0 +1,62 @@
+# Git cheat sheet for commando.
+# Optional [ ... ] segments drop entirely when their variable is skipped.
+
+[[cmd]]
+title = "Search git log"
+desc = "Search git log by author for a file."
+tmpl = "git log [--author=<author>] [-n <count>] -- <file>"
+tags = ["git", "log", "history"]
+
+  [[cmd.var]]
+  name = "author"
+  src  = "git log --all --format='%an' | sort -u"
+
+  [[cmd.var]]
+  name    = "count"
+  default = "20"
+
+  [[cmd.var]]
+  name     = "file"
+  multi    = true
+  each     = '"{}"'
+  remember = "project"
+
+[[cmd]]
+title = "Interactive rebase"
+desc = "Interactively rebase the last N commits."
+tmpl = "git rebase -i HEAD~<n>"
+tags = ["git", "rebase"]
+
+  [[cmd.var]]
+  name    = "n"
+  default = "3"
+
+[[cmd]]
+title = "Delete local branch"
+desc = "Force-delete a local git branch."
+tmpl = "git branch -D <branch>"
+tags = ["git", "branch", "delete"]
+
+  [[cmd.var]]
+  name     = "branch"
+  src      = "git branch --format='%(refname:short)'"
+  remember = "project"
+
+[[cmd]]
+title = "Create git branch"
+desc = "Create and switch to a new branch."
+tmpl = "git switch -c <branch>"
+tags = ["git", "branch", "new"]
+
+  [[cmd.var]]
+  name     = "branch"
+  remember = "project"
+
+[[cmd]]
+title = "Amend last commit"
+desc = "Amend the last commit, optionally with a new message."
+tmpl = "git commit --amend [-m <message>]"
+tags = ["git", "commit", "amend"]
+
+  [[cmd.var]]
+  name = "message"

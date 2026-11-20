@@ -1,0 +1,59 @@
+# Everyday file / archive / search commands for commando.
+
+[[cmd]]
+title = "Create tar archive"
+desc = "Create a gzipped tar archive from files."
+tmpl = "tar czf <archive> <files>"
+tags = ["tar", "archive", "compress"]
+
+  [[cmd.var]]
+  name    = "archive"
+  default = "archive.tar.gz"
+
+  [[cmd.var]]
+  name  = "files"
+  multi = true
+  each  = '"{}"'
+
+[[cmd]]
+title = "Extract tar archive"
+desc = "Extract a tar archive, optionally into a directory."
+tmpl = "tar xzf <archive> [-C <dir>]"
+tags = ["tar", "extract"]
+
+  [[cmd.var]]
+  name = "archive"
+
+  [[cmd.var]]
+  name = "dir"
+
+[[cmd]]
+title = "Find files by name"
+desc = "Find files by name pattern under a directory."
+tmpl = "find <dir> -name '<pattern>' [-type <type>]"
+tags = ["find", "search", "files"]
+
+  [[cmd.var]]
+  name    = "dir"
+  default = "."
+
+  [[cmd.var]]
+  name = "pattern"
+
+  [[cmd.var]]
+  name = "type"
+
+[[cmd]]
+title = "Search file contents"
+desc = "Recursively search file contents with ripgrep."
+tmpl = "rg [-t <filetype>] '<query>' [<path>]"
+tags = ["ripgrep", "rg", "search", "grep"]
+
+  [[cmd.var]]
+  name = "filetype"
+
+  [[cmd.var]]
+  name = "query"
+
+  [[cmd.var]]
+  name = "path"

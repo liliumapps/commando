@@ -1,0 +1,59 @@
+# kubectl cheat sheet for commando.
+
+[[cmd]]
+title = "Tail pod logs"
+desc = "Tail logs for a pod, optionally in a namespace and container."
+tmpl = "kubectl logs -f [-n <namespace>] [-c <container>] <pod>"
+tags = ["kubectl", "k8s", "logs"]
+
+  [[cmd.var]]
+  name     = "namespace"
+  src      = "kubectl get ns -o name | cut -d/ -f2"
+  remember = "dir"
+
+  [[cmd.var]]
+  name = "container"
+
+  [[cmd.var]]
+  name         = "pod"
+  src          = "kubectl get pods"
+  header_lines = 1
+  columns      = ["name", "ready", "status"]
+  label        = "<name>  [<status>]"   # shown/searched with status …
+  value        = "<name>"                # … but only the name is inserted
+  cache        = "10s"                   # avoid re-hitting the API on re-fetch
+
+[[cmd]]
+title = "Open pod shell"
+desc = "Exec an interactive shell into a pod."
+tmpl = "kubectl exec -it <pod> [-n <namespace>] -- <shell>"
+tags = ["kubectl", "k8s", "exec"]
+
+  [[cmd.var]]
+  name = "pod"
+  src  = "kubectl get pods -o name | cut -d/ -f2"
+
+  [[cmd.var]]
+  name     = "namespace"
+  remember = "dir"
+
+  [[cmd.var]]
+  name    = "shell"
+  default = "/bin/sh"
+
+[[cmd]]
+title = "Get kubectl resources"
+desc = "Get resources of a kind, optionally with namespace or output flags."
+tmpl = "kubectl get <kind> [-n <namespace>] [-o <output>]"
+tags = ["kubectl", "k8s", "get"]
+
+  [[cmd.var]]
+  name    = "kind"
+  default = "pods"
+
+  [[cmd.var]]
+  name     = "namespace"
+  remember = "dir"
+
+  [[cmd.var]]
+  name = "output"

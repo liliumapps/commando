@@ -1,0 +1,236 @@
+{% macro icon(name, class_name="") -%}
+<span class="icon {{ class_name }}" aria-hidden="true">{% include "assets/icons/" ~ name ~ ".svg" %}</span>
+{%- endmacro %}
+
+{% macro nav_url(item) -%}
+{%- if item.is_page -%}{{ item.url|url }}{%- elif item.children -%}{{ item.children[0].url|url }}{%- endif -%}
+{%- endmacro %}
+
+{% macro mobile_nav(items, level=0) -%}
+<ul class="drawer-nav__list drawer-nav__list--level-{{ level }}">
+  {%- for item in items %}
+  <li class="drawer-nav__item{% if item.active %} is-active{% endif %}">
+    {%- if item.children %}
+    <div class="drawer-nav__section">
+      <a href="{{ nav_url(item) }}">{{ item.title }}</a>
+      {{ icon("chevron-down") }}
+    </div>
+    {{ mobile_nav(item.children, level + 1) }}
+    {%- else %}
+    <a href="{{ item.url|url }}"{% if item.active %} aria-current="page"{% endif %}>{{ item.title }}</a>
+    {%- endif %}
+  </li>
+  {%- endfor %}
+</ul>
+{%- endmacro %}
+
+{% macro toc_tree(items) -%}
+<ol>
+  {%- for item in items %}
+  <li>
+    <a href="{{ item.url }}">{{ item.title }}</a>
+    {%- if item.children %}{{ toc_tree(item.children) }}{% endif %}
+  </li>
+  {%- endfor %}
+</ol>
+{%- endmacro %}
+
+{% set hidden = page.meta.hide|default([]) if page else [] %}
+{% set active = namespace(section=None) %}
+{% for item in nav %}
+  {% if item.active and item.children %}{% set active.section = item %}{% endif %}
+{% endfor %}
+{% set has_sidebar = active.section and "navigation" not in hidden %}
+{% set has_toc = page and page.toc and "toc" not in hidden %}
+
+<!doctype html>
+<html lang="en" data-theme="dark" data-site-root="{{ base_url }}/" data-search-index="{{ 'search/search_index.json'|url }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark light">
+    <meta name="theme-color" content="#0b0e11">
+    <meta name="description" content="{{ config.site_description }}">
+    {% if config.site_author %}<meta name="author" content="{{ config.site_author }}">{% endif %}
+    {% if page and page.canonical_url %}<link rel="canonical" href="{{ page.canonical_url }}">{% endif %}
+    <link rel="icon" href="{{ config.theme.favicon|url }}">
+    <title>{% if page and page.title and not page.is_homepage %}{{ page.title }} | {% endif %}{{ config.site_name }}</title>
+    <script>
+      try {
+        document.documentElement.dataset.theme =
+          localStorage.getItem("commando-docs-theme") || "dark";
+      } catch (_) {}
+    </script>
+    <link rel="stylesheet" href="{{ 'assets/stylesheets/theme.css'|url }}">
+  </head>
+  <body{% if page and page.is_homepage %} class="is-home"{% endif %}>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <div class="reading-progress" data-reading-progress></div>
+
+    <header class="site-header" data-site-header>
+      <div class="site-header__inner">
+        <button class="icon-button menu-button" type="button" aria-label="Open navigation" aria-controls="mobile-navigation" aria-expanded="false" data-drawer-open>
+          {{ icon("menu") }}
+        </button>
+
+        <a class="brand" href="{{ nav.homepage.url|url }}" aria-label="{{ config.site_name }} home">
+          <img src="{{ config.theme.favicon|url }}" alt="" width="28" height="28">
+          <span>{{ config.site_name }}</span>
+        </a>
+
+        <nav class="top-nav" aria-label="Primary navigation">
+          {% for item in nav %}
+          <a href="{{ nav_url(item) }}"{% if item.active %} class="is-active" aria-current="page"{% endif %}>{{ item.title }}</a>
+          {% endfor %}
+        </nav>
+
+        <div class="header-actions">
+          <button class="search-trigger" type="button" data-search-open>
+            {{ icon("search") }}
+            <span>Search docs</span>
+            <kbd>/</kbd>
+          </button>
+
+          <button class="icon-button theme-button" type="button" aria-label="Switch color theme" title="Switch color theme" data-theme-toggle>
+            {{ icon("sun", "theme-button__sun") }}
+            {{ icon("moon", "theme-button__moon") }}
+          </button>
+
+          <a class="repo-link" href="{{ config.repo_url }}" target="_blank" rel="noopener">
+            <span>GitHub</span>
+            {{ icon("external-link") }}
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <div class="drawer-backdrop" data-drawer-backdrop></div>
+    <aside class="mobile-drawer" id="mobile-navigation" aria-label="Mobile navigation" aria-hidden="true" data-drawer>
+      <div class="mobile-drawer__header">
+        <a class="brand" href="{{ nav.homepage.url|url }}">
+          <img src="{{ config.theme.favicon|url }}" alt="" width="28" height="28">
+          <span>{{ config.site_name }}</span>
+        </a>
+        <button class="icon-button" type="button" aria-label="Close navigation" data-drawer-close>{{ icon("x") }}</button>
+      </div>
+      <nav class="drawer-nav" aria-label="Documentation navigation">
+        {{ mobile_nav(nav) }}
+      </nav>
+      <a class="mobile-drawer__repo" href="{{ config.repo_url }}" target="_blank" rel="noopener">
+        View on GitHub {{ icon("external-link") }}
+      </a>
+    </aside>
+
+    <div class="page-shell{% if page and page.is_homepage %} is-landing{% endif %}{% if has_sidebar %} has-sidebar{% endif %}{% if has_toc %} has-toc{% endif %}">
+      {% if has_sidebar %}
+      <aside class="docs-sidebar">
+        <nav aria-label="{{ active.section.title }}">
+          <p class="sidebar-label">Section</p>
+          <p class="sidebar-title">{{ active.section.title }}</p>
+          <ul>
+            {% for item in active.section.children %}
+            <li>
+              <a href="{{ item.url|url }}"{% if item.active %} class="is-active" aria-current="page"{% endif %}>
+                <span>{% if loop.first and item.title == active.section.title %}Overview{% else %}{{ item.title }}{% endif %}</span>
+                {% if item.active %}{{ icon("chevron-right") }}{% endif %}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </nav>
+      </aside>
+      {% endif %}
+
+      <main class="doc-main" id="content">
+        {% if page and not page.is_homepage and page.ancestors %}
+        <nav class="breadcrumbs" aria-label="Breadcrumb">
+          <a href="{{ nav.homepage.url|url }}">Docs</a>
+          {% for ancestor in page.ancestors|reverse %}
+          <span>/</span>
+          <a href="{{ ancestor.url|url }}">{{ ancestor.title }}</a>
+          {% endfor %}
+          <span>/</span>
+          <span aria-current="page">{{ page.title }}</span>
+        </nav>
+        {% endif %}
+
+        <article class="doc-content">
+          {{ page.content }}
+        </article>
+
+        {% if page and (page.previous_page or page.next_page) %}
+        <nav class="page-nav" aria-label="Page navigation">
+          {% if page.previous_page %}
+          <a class="page-nav__item page-nav__item--previous" href="{{ page.previous_page.url|url }}" rel="prev">
+            {{ icon("arrow-left") }}
+            <span><small>Previous</small><strong>{{ page.previous_page.title }}</strong></span>
+          </a>
+          {% else %}<span></span>{% endif %}
+          {% if page.next_page %}
+          <a class="page-nav__item page-nav__item--next" href="{{ page.next_page.url|url }}" rel="next">
+            <span><small>Next</small><strong>{{ page.next_page.title }}</strong></span>
+            {{ icon("arrow-right") }}
+          </a>
+          {% endif %}
+        </nav>
+        {% endif %}
+      </main>
+
+      {% if has_toc %}
+      <aside class="page-toc">
+        <nav aria-label="On this page">
+          <p class="toc-title">{{ icon("list") }} On this page</p>
+          {{ toc_tree(page.toc) }}
+        </nav>
+      </aside>
+      {% endif %}
+    </div>
+
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <div>
+          <a class="brand brand--small" href="{{ nav.homepage.url|url }}">
+            <img src="{{ config.theme.favicon|url }}" alt="" width="24" height="24">
+            <span>{{ config.site_name }}</span>
+          </a>
+          <p>A context-aware command launcher for the terminal.</p>
+        </div>
+        <div class="site-footer__meta">
+          <span>{{ config.copyright }}</span>
+          <a href="{{ config.repo_url }}" target="_blank" rel="noopener">Source {{ icon("external-link") }}</a>
+        </div>
+      </div>
+    </footer>
+
+    <dialog class="search-dialog" aria-label="Search documentation" data-search-dialog>
+      <div class="search-panel">
+        <div class="search-panel__input">
+          {{ icon("search") }}
+          <input type="search" autocomplete="off" spellcheck="false" placeholder="Search commands, guides, and reference..." aria-label="Search documentation" aria-controls="search-results" data-search-input>
+          <button class="icon-button" type="button" aria-label="Close search" data-search-close>{{ icon("x") }}</button>
+        </div>
+        <div class="search-panel__body">
+          <div class="search-empty" data-search-empty>
+            <span class="search-empty__mark">&gt;_</span>
+            <p>Search the Commando documentation</p>
+            <small>Try “optional parameters”, “shell history”, or “bookmarks”.</small>
+          </div>
+          <div class="search-results" id="search-results" role="listbox" data-search-results></div>
+        </div>
+        <div class="search-panel__footer">
+          <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+          <span><kbd>Enter</kbd> Open</span>
+          <span><kbd>Esc</kbd> Close</span>
+        </div>
+      </div>
+    </dialog>
+
+    <button class="back-to-top icon-button" type="button" aria-label="Back to top" title="Back to top" data-back-to-top>
+      {{ icon("arrow-up") }}
+    </button>
+
+    <template id="copy-icon">{{ icon("copy") }}</template>
+    <template id="check-icon">{{ icon("check") }}</template>
+    <script src="{{ 'assets/javascripts/theme.js'|url }}" defer></script>
+  </body>
+</html>

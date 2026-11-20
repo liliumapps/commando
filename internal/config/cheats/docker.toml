@@ -1,0 +1,75 @@
+# Docker cheat sheet for commando.
+
+[[cmd]]
+title = "Tail container logs"
+desc = "Tail logs for a running container."
+tmpl = "docker logs -f [--tail <lines>] <container>"
+tags = ["docker", "logs"]
+
+  [[cmd.var]]
+  name    = "lines"
+  default = "100"
+
+  [[cmd.var]]
+  name     = "container"
+  src      = "docker ps --format '{{.Names}}'"
+  remember = "dir"
+
+[[cmd]]
+title = "Open container shell"
+desc = "Open an interactive shell in a running container."
+tmpl = "docker exec -it <container> <shell>"
+tags = ["docker", "exec", "shell"]
+
+  [[cmd.var]]
+  name = "container"
+  src  = "docker ps --format '{{.Names}}'"
+
+  [[cmd.var]]
+  name    = "shell"
+  default = "/bin/sh"
+
+[[cmd]]
+title = "Prune docker system"
+desc = "Remove stopped containers, unused networks, and dangling images."
+tmpl = "docker system prune [-f]"
+tags = ["docker", "prune", "cleanup"]
+
+  [[cmd.var]]
+  name    = "f"
+  default = "-f"
+
+[[cmd]]
+title = "Build docker image"
+desc = "Build a docker image and tag it."
+tmpl = "docker build -t <tag> [-f <dockerfile>] <context>"
+tags = ["docker", "build"]
+
+  [[cmd.var]]
+  name = "tag"
+
+  [[cmd.var]]
+  name = "dockerfile"
+
+  [[cmd.var]]
+  name    = "context"
+  default = "."
+
+[[cmd]]
+title = "Remove docker image"
+desc = "Search images by repo:tag, then insert only the image id."
+tmpl = "docker rmi <image>"
+tags = ["docker", "rmi", "cleanup"]
+
+  # The candidate list shows "repo:tag  (id)" so you can find the image by
+  # name, but only the image id is inserted into the command.
+  [[cmd.var]]
+  name         = "image"
+  src          = "docker images"
+  header_lines = 1
+  match        = '^(?P<repo>\S+)\s+(?P<tag>\S+)\s+(?P<id>\S+)'
+  label        = "<repo>:<tag>  (<id>)"
+  value        = "<id>"
+  strict       = true
+  remember     = "none"      # image ids are ephemeral; don't remember them
+  preview      = "docker image inspect {} --format '{{json .Config}}'"

@@ -1,0 +1,71 @@
+# golangci-lint configuration for commando.
+# Run:  golangci-lint run
+#
+# Uses the v2 config schema (golangci-lint v2.x). The enabled set is kept
+# focused so the linter stays useful rather than noisy: correctness and
+# dead-code checks plus a few high-signal style linters.
+version: "2"
+
+run:
+  timeout: 3m
+  tests: true
+
+linters:
+  # Start from the default set (errcheck, govet, ineffassign, staticcheck,
+  # unused) and add a few high-signal extras.
+  default: standard
+  enable:
+    - misspell    # common spelling mistakes in code and comments
+    - unconvert   # unnecessary type conversions
+    - bodyclose   # unclosed HTTP response bodies (cheap insurance)
+    - errorlint   # correct error wrapping / comparison
+    - gocritic    # opinionated correctness + style diagnostics
+    # unparam is intentionally NOT enabled: the CLI uses a uniform
+    # cmdX(args, stdout, stderr) handler signature for dispatch, so some
+    # handlers legitimately ignore `args`.
+
+  settings:
+    gocritic:
+      # Enable the stable diagnostic groups; leave experimental ones off.
+      enabled-tags:
+        - diagnostic
+        - style
+      disabled-checks:
+        - ifElseChain   # our template/parser code reads fine as if/else
+    unparam:
+      check-exported: false
+    errcheck:
+      # Ignore unchecked returns from fns that idiomatically don't need it:
+      # terminal writes and Close on read/temp files. Meaningful returns are
+      # still checked.
+      exclude-functions:
+        - (io.Writer).Write
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - (*os.File).Close
+        - os.Remove
+        # App.Close performs a best-effort retry of state already flushed at
+        # the end of a TUI selection; command handlers use it as deferred
+        # cleanup and have no useful error channel at that point.
+        - (*github.com/liliumapps/commando/internal/app.App).Close
+    staticcheck:
+      # Disable the QF* "quickfix" style-refactor suggestions (e.g. De Morgan
+      # rewrites); they fight intentionally-readable expressions. Keep all real
+      # SA correctness checks.
+      checks:
+        - all
+        - -QF1001
+
+  exclusions:
+    generated: lax
+    rules:
+      # Test files freely ignore setup errors (Add/WriteFile) — noise, not
+      # defects.
+      - path: _test\.go
+        linters:
+          - errcheck
+
+formatters:
+  enable:
+    - gofmt

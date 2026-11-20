@@ -1,0 +1,82 @@
+version: 2
+
+before:
+  hooks:
+    - go mod verify
+    - go vet ./...
+    - go test ./...
+
+builds:
+  - id: commando
+    main: .
+    binary: commando
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - >-
+        -s -w
+        -X github.com/liliumapps/commando/internal/cli.version={{ .Version }}
+
+archives:
+  - id: binaries
+    ids:
+      - commando
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch }}{{ end }}
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+
+checksum:
+  name_template: checksums.txt
+
+homebrew_casks:
+  - name: commando
+    ids:
+      - binaries
+    binaries:
+      - commando
+    repository:
+      owner: liliumapps
+      name: homebrew-tap
+      branch: main
+      # Pushed over SSH with a deploy key scoped to the tap repository only.
+      git:
+        url: "git@github.com:liliumapps/homebrew-tap.git"
+        private_key: "{{ .Env.HOMEBREW_TAP_DEPLOY_KEY }}"
+    skip_upload: auto
+    homepage: "https://commando.liliumapps.com"
+    description: "Context-aware command launcher for the terminal"
+    caveats: |
+      Add shell integration:
+        Zsh:  eval "$(commando init zsh)"
+        Bash: eval "$(commando init bash)"
+        Fish: commando init fish | source
+    hooks:
+      post:
+        install_steps: |
+          on_macos do
+            run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/commando"]
+          end
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"

@@ -1,0 +1,92 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Commando documentation
+# Build locally:  pip install -r docs/requirements.txt && mkdocs serve
+# Published to GitHub Pages by .github/workflows/docs.yml
+# ─────────────────────────────────────────────────────────────────────────────
+site_name: Commando
+site_description: >-
+  A context-aware command launcher for the terminal — cheat sheets, project
+  commands, and shell history behind one fuzzy TUI, with argument memory.
+site_author: Lilium Apps
+site_url: https://commando.liliumapps.com/
+
+repo_name: liliumapps/commando
+repo_url: https://github.com/liliumapps/commando
+edit_uri: edit/main/docs/
+
+copyright: Copyright &copy; 2026 Lilium Apps
+
+# Turn link problems into build failures (with --strict) so CI catches broken
+# cross-references and anchors instead of shipping them.
+validation:
+  links:
+    not_found: warn
+    absolute_links: warn
+    unrecognized_links: warn
+    anchors: warn
+
+theme:
+  name: null
+  custom_dir: docs/theme
+  favicon: assets/favicon.svg
+
+markdown_extensions:
+  # Presentation
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      permalink_title: Anchor link to this section
+  # PyMdown
+  - pymdownx.betterem
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.details
+  - pymdownx.keys
+  - pymdownx.smartsymbols
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - getting-started/index.md
+      - Installation & setup: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+  - Guide:
+      - guide/index.md
+      - Concepts: guide/concepts.md
+      - The TUI: guide/tui.md
+      - Cheat sheets: guide/cheat-sheets.md
+      - Template syntax: guide/templates.md
+      - Variables: guide/variables.md
+      - Argument memory: guide/argument-memory.md
+      - Project commands: guide/project-commands.md
+      - Shell history: guide/shell-history.md
+      - Bookmarks: guide/bookmarks.md
+  - Reference:
+      - reference/index.md
+      - CLI: reference/cli.md
+      - Configuration: reference/configuration.md
+      - Files & storage: reference/files.md
+  - FAQ: faq.md
+  - Contributing: contributing.md

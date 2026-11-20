@@ -1,0 +1,34 @@
+# Example cheat file — git commands.
+# Demonstrates optional [ ] segments, multi-select, candidate `src`, and memory.
+
+[[cmd]]
+title = "Search git log"
+desc = "Search git log by author for a file."
+tmpl = "git log [--author=<author>] [-n <count>] -- <file>"
+tags = ["git", "log"]
+
+  [[cmd.var]]
+  name = "author"
+  src  = "git log --all --format='%an' | sort -u"
+
+  [[cmd.var]]
+  name    = "count"
+  default = "20"
+
+  [[cmd.var]]
+  name     = "file"
+  multi    = true
+  each     = '"{}"'
+  remember = "project"
+
+[[cmd]]
+title = "Delete local branch"
+desc = "Force-delete a local git branch."
+tmpl = "git branch -D <branch>"
+tags = ["git", "branch", "delete"]
+
+  [[cmd.var]]
+  name     = "branch"
+  src      = "git branch --format='%(refname:short)'"
+  strict   = true
+  remember = "project"

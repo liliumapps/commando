@@ -1,0 +1,28 @@
+# Binaries
+/commando
+/bin/
+*.exe
+*.test
+*.out
+
+# Build artifacts
+/dist/
+
+# Local state (created at runtime)
+*.db
+*.db-shm
+*.db-wal
+
+# Docs (Material for MkDocs)
+# - site/ is the built site (published via GitHub Actions)
+# - .venv/ is the local docs virtualenv (make docs-install)
+# - .sandbox/ is the throwaway GIF-recording sandbox (make docs-gifs)
+/site/
+/.venv/
+/docs/recordings/.sandbox/
+
+# Editor / OS
+.DS_Store
+*.swp
+.idea/
+.vscode/

@@ -1,0 +1,80 @@
+# Build the Commando docs with MkDocs and publish to GitHub Pages.
+#
+# One-time repo setup:
+#   gh api -X POST repos/liliumapps/commando/pages -f build_type=workflow
+#   gh api -X PUT repos/liliumapps/commando/pages -f cname=commando.liliumapps.com
+#   Cloudflare (DNS only): CNAME commando -> liliumapps.github.io
+#   Once the certificate is issued:
+#   gh api -X PUT repos/liliumapps/commando/pages -F https_enforced=true
+#
+# After that, every push to main that touches docs redeploys the site to
+#   https://commando.liliumapps.com/
+name: docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - ".github/workflows/docs.yml"
+  # Allow manual runs from the Actions tab.
+  workflow_dispatch:
+
+# Least-privilege token; Pages deploy needs pages + id-token.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never cancel an in-flight production deploy; queue instead.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: docs/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r docs/requirements.txt
+
+      # --strict turns broken links and other warnings into build failures,
+      # so a bad reference fails CI instead of shipping silently.
+      - name: Build (strict)
+        run: mkdocs build --strict
+
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

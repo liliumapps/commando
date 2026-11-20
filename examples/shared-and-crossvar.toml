@@ -1,0 +1,88 @@
+# Example cheat file — advanced features.
+# Demonstrates shared variable groups (use = [...]), the display/value split
+# (header_lines + match/label/value), a preview command, and cross-variable
+# `src` lookups.
+
+# A shared group defined once and reused across commands.
+[[vars.aws]]
+name = "profile"
+src  = "aws configure list-profiles"
+remember = "dir"
+
+[[vars.aws]]
+name    = "region"
+values  = ["us-east-1", "us-west-2", "eu-west-1"]
+default = "us-east-1"
+strict  = true
+
+[[cmd]]
+title = "List S3 buckets"
+desc = "List S3 buckets using shared profile and region variables."
+tmpl = "aws --profile <profile> --region <region> s3 ls"
+tags = ["aws", "s3"]
+use  = ["aws"]
+
+[[cmd]]
+title = "List EC2 instances"
+desc = "List EC2 instance ids reusing the same shared profile and region."
+tmpl = "aws --profile <profile> --region <region> ec2 describe-instances --query 'Reservations[].Instances[].InstanceId' --output text"
+tags = ["aws", "ec2"]
+use  = ["aws"]
+
+[[cmd]]
+title = "Remove docker image"
+desc = "Search images by repo:tag, then insert only the image id."
+tmpl = "docker rmi <image>"
+tags = ["docker", "images"]
+
+  # The list shows "repo:tag  (id)" so you find the image by name, but only the
+  # image id is inserted. header_lines drops the "REPOSITORY TAG …" header.
+  [[cmd.var]]
+  name         = "image"
+  src          = "docker images"
+  header_lines = 1
+  match        = '^(?P<repo>\S+)\s+(?P<tag>\S+)\s+(?P<id>\S+)'
+  label        = "<repo>:<tag>  (<id>)"
+  value        = "<id>"
+  strict       = true
+  remember     = "none"
+  preview      = "docker image inspect {}"
+
+[[cmd]]
+title = "Kill process"
+desc = "Pick a process by name and insert only its PID."
+tmpl = "kill -9 <pid>"
+tags = ["proc", "kill"]
+
+  # columns names the whitespace-split fields; label composes a readable line
+  # while value inserts just the PID. pattern guards that it is numeric.
+  [[cmd.var]]
+  name         = "pid"
+  src          = "ps -eo pid,comm"
+  header_lines = 1
+  columns      = ["pid", "comm"]
+  label        = "<comm>  (<pid>)"
+  value        = "<pid>"
+  pattern      = '^[0-9]+$'
+  remember     = "none"
+
+[[cmd]]
+title = "Show container logs"
+desc = "Show a container's logs; pod candidates depend on the namespace, container candidates on the pod."
+tmpl = "kubectl logs <pod> -c <container> -n <namespace>"
+tags = ["kubectl", "logs"]
+
+  # Cross-variable src lookups: <container>'s candidates are computed from the
+  # chosen <pod>, and <pod>'s from <namespace>. Dependencies resolve first.
+  [[cmd.var]]
+  name = "container"
+  src  = "kubectl get pod <pod> -n <namespace> -o jsonpath='{.spec.containers[*].name}' | tr ' ' '\\n'"
+
+  [[cmd.var]]
+  name = "pod"
+  src  = "kubectl get pods -n <namespace> -o name | cut -d/ -f2"
+
+  [[cmd.var]]
+  name    = "namespace"
+  src     = "kubectl get namespaces -o name | cut -d/ -f2"
+  default = "default"

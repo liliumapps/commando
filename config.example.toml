@@ -1,0 +1,54 @@
+# Example commando configuration.
+# Copy to $XDG_CONFIG_HOME/commando/config.toml (usually ~/.config/commando/config.toml).
+# All fields are optional; omitted fields keep their defaults.
+
+# Portable control-key sequence bound by `commando init zsh|bash|fish`.
+key_binding = "^G"
+
+# Commands matching any of these patterns are hidden from history, and
+# matching values and bookmarks are not stored. Patterns are matched
+# case-insensitively against the whole line and each word. A pattern with no
+# wildcard is a substring match; `*` matches any run of characters, including
+# `/`. Setting this list replaces the defaults below, but built-in detectors
+# for secret-shaped values (cloud keys, tokens, JWTs, user:pass@ URLs,
+# mysql -p<pw>, Authorization/Bearer headers) always apply.
+history_ignore = [
+  "*password*",
+  "*passwd*",
+  "*secret*",
+  "*token*",
+  "*apikey*",
+  "*api_key*",
+  "export *KEY*",
+  "*credential*",
+  "*authorization:*",
+  "*bearer *",
+  "aws_*=*",
+  "*_token=*",
+  "*_secret=*",
+  "*_pat=*",
+]
+
+# Shell-history tuning.
+[history]
+# How many history commands appear in the list when you are NOT searching.
+# When you type a query, all matches in the loaded window are shown.
+# Default 10; set to a negative number for unlimited.
+list_limit = 10
+# How many unique commands to retain from the newest history.
+# Default 5000; zero keeps the default and a negative number is unlimited.
+max_load = 5000
+# Read only this many bytes from the newest end of the history file.
+# Default 8 MiB; zero keeps the default and a negative number reads everything.
+max_bytes = 8388608
+
+# User-defined project providers. Each is detected by a marker file found by
+# walking up from the current directory; `list` produces candidate items (one
+# per line) and each item is shell-quoted into `template` at "{}".
+#
+# [[provider]]
+# name     = "task"
+# detect   = "Taskfile.yml"
+# list     = "task --list-all --silent | awk '{print $2}'"
+# template = "task {}"
+# cache    = "5m"   # optional: cache slow listers for this duration (persists across launches)

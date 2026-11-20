@@ -1,0 +1,59 @@
+# Process management cheat sheet for commando.
+#
+# These entries showcase the display/value split: the candidate list stays
+# readable (you search by process name), while only the PID is inserted.
+
+[[cmd]]
+title = "Kill process"
+desc = "Pick a process by name and send SIGKILL to its PID."
+tmpl = "kill -9 <pid>"
+tags = ["proc", "kill", "signal"]
+
+  # `ps` output is shown as "comm (pid)" so you can fuzzy-search by the process
+  # name, but <pid> resolves to just the numeric id. A trailing header row is
+  # dropped, the line is matched with named groups, and the value is validated
+  # to be all digits. PIDs are ephemeral, so memory is disabled.
+  [[cmd.var]]
+  name         = "pid"
+  src          = "ps -eo pid,comm"
+  header_lines = 1
+  match        = '^\s*(?P<pid>\d+)\s+(?P<comm>.+)$'
+  label        = "<comm>  (<pid>)"
+  value        = "<pid>"
+  pattern      = '^[0-9]+$'
+  strict       = true
+  remember     = "none"
+  preview      = "ps -p {} -o pid,ppid,user,%cpu,%mem,etime,args"
+
+[[cmd]]
+title = "Signal process"
+desc = "Pick a process by name and send a chosen signal to its PID."
+tmpl = "kill -<signal> <pid>"
+tags = ["proc", "kill", "signal"]
+
+  [[cmd.var]]
+  name    = "signal"
+  values  = ["TERM", "KILL", "HUP", "INT", "QUIT", "USR1", "USR2"]
+  default = "TERM"
+  strict  = true
+
+  [[cmd.var]]
+  name         = "pid"
+  src          = "ps -eo pid,comm"
+  header_lines = 1
+  match        = '^\s*(?P<pid>\d+)\s+(?P<comm>.+)$'
+  label        = "<comm>  (<pid>)"
+  value        = "<pid>"
+  pattern      = '^[0-9]+$'
+  strict       = true
+  remember     = "none"
+
+[[cmd]]
+title = "Find port listener"
+desc = "Show the process listening on a TCP port."
+tmpl = "lsof -nP -iTCP:<port> -sTCP:LISTEN"
+tags = ["proc", "port", "net"]
+
+  [[cmd.var]]
+  name    = "port"
+  pattern = '^[0-9]+$'

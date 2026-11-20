@@ -1,0 +1,5 @@
+# Documentation build dependencies for the Commando site.
+# Install:  pip install -r docs/requirements.txt
+# Serve:    mkdocs serve
+# Build:    mkdocs build --strict
+mkdocs-material==9.5.44
