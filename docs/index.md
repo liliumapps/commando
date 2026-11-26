@@ -178,17 +178,17 @@ all keep working — and you get the last word before anything executes.
 
 ## More from Lilium Apps
 
-Commando is made by [Lilium Apps](https://liliumapps.com), an independent
+Commando is made by [Lilium Apps](https://liliumapps.com?utm_source=commando_site&utm_campaign=more_apps), an independent
 studio. Other things we make:
 
-- [Lumen](https://lumen.liliumapps.com): a privacy-first Android file manager
+- [Lumen](https://lumen.liliumapps.com?utm_source=commando_site&utm_campaign=more_apps): a privacy-first Android file manager
   with fast search and storage insights.
-  [Get it on Google Play](https://play.google.com/store/apps/details?id=com.liliumapps.lumenfiles).
-- [VLC Stream and Remote](https://vlc.liliumapps.com): control VLC on your
+  [Get it on Google Play](https://play.google.com/store/apps/details?id=com.liliumapps.lumenfiles&utm_source=commando_site&utm_campaign=more_apps).
+- [VLC Stream and Remote](https://vlc.liliumapps.com?utm_source=commando_site&utm_campaign=more_apps): control VLC on your
   computer from your phone.
-  [Get it on Google Play](https://play.google.com/store/apps/details?id=tuple.me.vlcremote).
+  [Get it on Google Play](https://play.google.com/store/apps/details?id=tuple.me.vlcremote&utm_source=commando_site&utm_campaign=more_apps).
 
-See everything at [liliumapps.com](https://liliumapps.com).
+See everything at [liliumapps.com](https://liliumapps.com?utm_source=commando_site&utm_campaign=more_apps).
 
 ## Credits
 
